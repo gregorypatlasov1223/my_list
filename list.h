@@ -7,13 +7,13 @@
 
 #include "list_error_types.h"
 
-typedef double type_of_data;
+typedef int type_of_data;
 
 struct element_in_list
 {
-    double data;
-    int    next;
-    int    prev;
+    type_of_data data;
+    ssize_t      next;
+    ssize_t      prev;
 };
 
 struct doubly_linked_list
@@ -25,6 +25,7 @@ struct doubly_linked_list
 };
 
 const int FICTIVE_ELEMENT_INDEX          = 0;
+const int COEF                           = 2;
 const int CAPACITY_INCREASE_COEFFICIENT  = 2;
 const int MAX_LENGTH_OF_FILENAME         = 256;
 const int MAX_LENGTH_OF_SYSTEM_COMMAND   = 512;

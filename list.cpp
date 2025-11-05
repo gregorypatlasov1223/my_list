@@ -15,8 +15,8 @@ int element_is_free(doubly_linked_list* list, int index)
     if (index < 0 || index >= list -> capacity)
         return 0;
 
-    int current_free_index = list -> free; // list -> free - первый свободный
-    while (current_free_index != SHIT_INDEX)
+    ssize_t current_free_index = list -> free; // list -> free - первый свободный
+    while (current_free_index != SHIT_INDEX && current_free_index >= 0 && current_free_index < list -> capacity)
     {
         if (current_free_index == index)
             return 1; // надо 1 надо поработать
@@ -36,7 +36,7 @@ list_type_error list_realloc(doubly_linked_list* list, ssize_t new_capacity)
     if (new_capacity < 0 || new_capacity <= list -> capacity)
         return LIST_WRONG_SPECIFIED_CAPACITY;
 
-    element_in_list* new_array = (element_in_list*)realloc(list -> array, new_capacity * sizeof(element_in_list));
+    element_in_list* new_array = (element_in_list*)realloc(list -> array, size_t(new_capacity) * sizeof(element_in_list));
     if (new_array == NULL)
         return LIST_ALLOCATION_FAILED;
 
@@ -48,7 +48,7 @@ list_type_error list_realloc(doubly_linked_list* list, ssize_t new_capacity)
         list -> array[i].data = POISON;
         if (list -> array[i].next == new_capacity - 1) // зачем тут -1
             list -> array[i].next = FICTIVE_ELEMENT_INDEX;
-        list -> array[i].next = i + 1;
+        list -> array[i].next = int(i + 1);
 
         list -> array[i].prev = -1; //  почему -1;
     }
@@ -57,11 +57,11 @@ list_type_error list_realloc(doubly_linked_list* list, ssize_t new_capacity)
         list -> free = old_capacity; // old_capacity подразумевает с фиктивным элементом?
     else
     {
-        int last_free = list -> free;
+        ssize_t last_free = list -> free;
         while (list -> array[last_free].next != FICTIVE_ELEMENT_INDEX)
             last_free = list -> array[last_free].next;
 
-        list -> array[last_free].next = old_capacity;  // не понимаю как связываем последний свободный с первым новым
+        list -> array[last_free].next = int(old_capacity);  // не понимаю как связываем последний свободный с первым новым
     }
 
     list -> capacity = new_capacity;
@@ -77,7 +77,7 @@ list_type_error list_constructor_with_specified_capacity(doubly_linked_list* ptr
     if (capacity < 0)
         return LIST_WRONG_SPECIFIED_CAPACITY;
 
-    ptr_list_struct -> array = (element_in_list*)calloc(capacity, sizeof(element_in_list));
+    ptr_list_struct -> array = (element_in_list*)calloc((size_t)capacity, sizeof(element_in_list));
     if (ptr_list_struct -> array == NULL)
         return LIST_ALLOCATION_FAILED;
 
@@ -92,7 +92,7 @@ list_type_error list_constructor_with_specified_capacity(doubly_linked_list* ptr
         ptr_list_struct -> array[i].data = POISON;
         if (ptr_list_struct -> array[i].next == capacity - 1)
             ptr_list_struct -> array[i].next = FICTIVE_ELEMENT_INDEX;
-        ptr_list_struct -> array[i].next = i + 1;
+        ptr_list_struct -> array[i].next = int(i + 1);
 
         ptr_list_struct -> array[i].prev = -1;
     }
@@ -135,7 +135,7 @@ list_type_error insert_after_element(doubly_linked_list* list, int target_index,
             return result_of_realloc;
     }
 
-    int new_index = list -> free;
+    ssize_t new_index = list -> free;
     list -> free = list -> array[new_index].next;
 
     list -> array[new_index].data = value;
@@ -143,8 +143,8 @@ list_type_error insert_after_element(doubly_linked_list* list, int target_index,
     list -> array[new_index].prev = target_index;
     list -> array[new_index].next = list -> array[target_index].next;
 
-    list -> array[target_index].next = new_index;
-    list -> array[list -> array[new_index].next].prev = new_index;
+    list -> array[target_index].next = int(new_index);
+    list -> array[list -> array[new_index].next].prev = int(new_index);
 
     return LIST_NO_ERROR;
 }
@@ -168,9 +168,9 @@ list_type_error insert_after_tail(doubly_linked_list* list, int value)
     if (list == NULL)
         return LIST_NULL_POINTER;
 
-    int tail_index = list -> array[FICTIVE_ELEMENT_INDEX].prev;
+    ssize_t tail_index = list -> array[FICTIVE_ELEMENT_INDEX].prev;
 
-    list_type_error result  = insert_after_element(list, tail_index, value);
+    list_type_error result  = insert_after_element(list, int(tail_index), value);
     if (result != LIST_NO_ERROR)
         return result;
 
@@ -193,7 +193,7 @@ list_type_error list_delete_element(doubly_linked_list* list, int index)
 
     element -> data = POISON;
     element -> prev = -1;
-    element -> next = list -> free;
+    element -> next = int(list -> free);
     list -> free = index;
 
     return LIST_NO_ERROR;
@@ -376,9 +376,9 @@ void write_elements_in_table(FILE* htm_file, doubly_linked_list* list)
     for (ssize_t i = 0; i < list -> capacity; i++)
     {
         element_in_list* element = &list -> array[i];
-        const char* status = get_status_of_element(list, i);
+        const char* status = get_status_of_element(list, int(i));
 
-        fprintf(htm_file, "<tr><td>%d</td><td>%d</td><td>%ld</td><td>%ld</td><td>%s</td></tr>\n",
+        fprintf(htm_file, "<tr><td>%ld</td><td>%d</td><td>%ld</td><td>%ld</td><td>%s</td></tr>\n",
                 i, element -> data, element -> next, element -> prev, status);
     }
 
@@ -394,7 +394,7 @@ void create_dot_nodes(doubly_linked_list* list, FILE* dot_file)
         element_in_list* element = &list -> array[i];
         const char* label  = "FREE";                     // где будет отображаться label
         const char* colour = "lightgreen";
-        int is_free = element_is_free(list, i);
+        int is_free = element_is_free(list, int(i));
 
 
         if (i == FICTIVE_ELEMENT_INDEX)
@@ -427,7 +427,7 @@ void create_dot_nodes(doubly_linked_list* list, FILE* dot_file)
             label  = "USED";
         }
 
-        fprintf(dot_file, "    element%d [label=\"{%s|{idx: %d|data: %d|next: %ld|prev: %ld}}\", style=filled, fillcolor=%s, color=black];\n", //Внешние фигурные скобки создают основную таблицу символ | между элементами разделяет строки таблицы; Внутренние фигурные скобки создают вложенные таблицы/ячейки Символ | внутри внутренних скобок разделяет столбцы внутри строки
+        fprintf(dot_file, "    element%ld [label=\"{%s|{idx: %ld|data: %d|next: %ld|prev: %ld}}\", style=filled, fillcolor=%s, color=black];\n", //Внешние фигурные скобки создают основную таблицу символ | между элементами разделяет строки таблицы; Внутренние фигурные скобки создают вложенные таблицы/ячейки Символ | внутри внутренних скобок разделяет столбцы внутри строки
                 i, label, i, element -> data, element -> next, element -> prev, colour);
 
         }
@@ -439,7 +439,7 @@ void create_dot_nodes(doubly_linked_list* list, FILE* dot_file)
 void create_invisible_element_connections(doubly_linked_list* list, FILE* dot_file)
 {
     for (ssize_t i = 0; i < list -> capacity -1; i++) // почему -1
-        fprintf(dot_file, "element%d -> element%d [weight=100000, style=invis, color=white];\n", i, i + 1);
+        fprintf(dot_file, "element%ld -> element%ld [weight=100000, style=invis, color=white];\n", i, i + 1);
 }
 
 
@@ -449,7 +449,7 @@ void create_normal_element_connections(doubly_linked_list* list, FILE* dot_file)
     {
         element_in_list* element = &list -> array[i];
 
-        if (element_is_free(list, i))
+        if (element_is_free(list, int(i)))
             continue;
 
         ssize_t next  = element -> next;
@@ -504,12 +504,17 @@ void create_free_element_connections(doubly_linked_list* list, FILE* dot_file)
 
 list_type_error create_dot_file(doubly_linked_list* list, const char* filename)
 {
+    assert(filename != NULL);
     if (list == NULL)
         return LIST_NULL_POINTER;
 
-    FILE* dot_file = fopen("dot_file.txt", "w");
+    FILE* dot_file = fopen(filename, "w");
     if (dot_file == NULL)
         return LIST_OPENING_FILE_ERROR;
+
+    fprintf(dot_file, "digraph DoublyLinkedList {\n");
+    fprintf(dot_file, "    rankdir=LR;\n");
+    fprintf(dot_file, "    node [shape=Mrecord, color = black];\n\n");
 
     create_dot_nodes(list, dot_file);
     create_invisible_element_connections(list, dot_file);
@@ -543,7 +548,7 @@ list_type_error create_graph_visualization(doubly_linked_list* list, FILE* htm_f
     if (dot_result != LIST_NO_ERROR)
         return dot_result;
 
-    char command[MAX_LENGTH_OF_SYSTEM_COMMAND] = {};
+    char command[MAX_LENGTH_OF_SYSTEM_COMMAND * COEF] = {};
     snprintf(command, sizeof(command), "dot -Tsvg %s -o %s", temp_dot, temp_svg); // преобразует DOT-файл в SVG-изображение
     int result = system(command);
 

@@ -1,30 +1,39 @@
-#include <stdio.h>
-
 #include "list.h"
+#include "list_error_types.h"
+#include <stdio.h>
 
 int main()
 {
-    doubly_linked_list list = {};
-    list_constructor_with_specified_capacity(&list, 7);
+    // 1. Инициализация лога
+    initialization_of_list_log("list_dump");
 
-    insert_after_element(&list, 0, 10);
-    insert_after_element(&list, 1, 20);
-    insert_after_element(&list, 2, 30);
-    insert_after_element(&list, 3, 40);
+    // 2. Создание списка
+    doubly_linked_list my_list = {};
+    list_constructor_with_specified_capacity(&my_list, 10);
 
-    // list_dump(&list, "before_delete.txt");
+    // 3. Добавление элементов (чтобы список не был пустым)
+    insert_before_head(&my_list, 100);
+    insert_after_tail(&my_list, 200);
+    insert_after_tail(&my_list, 300);
 
-    list_delete_element(&list, 2);
+    // 4. Создание дампа с картинкой
+    list_dump(&my_list, "list_dump");
 
-    // list_dump(&list, "after_delete.txt");
+    // 5. Добавляем еще элементов и создаем еще дамп
+    insert_after_tail(&my_list, 400);
+    list_delete_element(&my_list, 2); // удаляем какой-то элемент
 
-    insert_after_element(&list, 4, 50);
+    list_dump(&my_list, "list_dump");
 
-    // list_dump(&list, "after_new_insert.txt");
+    // 6. Закрытие лога
+    close_list_log("list_dump");
 
-    list_destructor(&list);
+    // 7. Деструктор списка
+    list_destructor(&my_list);
+
+    printf("Дампы созданы! Проверьте файлы:\n");
+    printf("- list_dump.htm - HTML файл c дампами\n");
+    printf("- list_dump_dump/ - папка c SVG картинками\n");
 
     return 0;
-
 }
-
