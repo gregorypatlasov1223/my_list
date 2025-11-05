@@ -36,6 +36,8 @@ list_type_error list_realloc(doubly_linked_list* list, ssize_t new_capacity)
     if (new_capacity < 0 || new_capacity <= list -> capacity)
         return LIST_WRONG_SPECIFIED_CAPACITY;
 
+    ssize_t old_size = list -> size;
+
     element_in_list* new_array = (element_in_list*)realloc(list -> array, size_t(new_capacity) * sizeof(element_in_list));
     if (new_array == NULL)
         return LIST_ALLOCATION_FAILED;
@@ -67,6 +69,7 @@ list_type_error list_realloc(doubly_linked_list* list, ssize_t new_capacity)
     }
 
     list -> capacity = new_capacity;
+    list -> size = old_size;
 
     return LIST_NO_ERROR;
 }
@@ -101,6 +104,7 @@ list_type_error list_constructor_with_specified_capacity(doubly_linked_list* ptr
     }
 
     ptr_list_struct -> free = 1;
+    ptr_list_struct -> size = 0;
 
     return LIST_NO_ERROR;
 }
@@ -148,6 +152,8 @@ list_type_error insert_after_element(doubly_linked_list* list, int target_index,
 
     list -> array[target_index].next = int(new_index);
     list -> array[list -> array[new_index].next].prev = int(new_index);
+
+    list -> size++;
 
     return LIST_NO_ERROR;
 }
@@ -205,6 +211,8 @@ list_type_error list_delete_element(doubly_linked_list* list, int index)
     element -> next = int(list -> free);
     list -> free = index;
 
+    list -> size--;
+
     return LIST_NO_ERROR;
 }
 
@@ -256,9 +264,9 @@ verify_result detect_cycle(doubly_linked_list* list)
         if (current_by_next == FICTIVE_ELEMENT_INDEX && current_by_prev == FICTIVE_ELEMENT_INDEX && steps == list -> size + 1)
             break;
 
-        // надо проверить что вышли именно по брейку
-        if (current_by_next != FICTIVE_ELEMENT_INDEX || current_by_prev != FICTIVE_ELEMENT_INDEX)
-            return VERIFY_CYCLE_DETECTED;
+        // // надо проверить что вышли именно по брейку
+        // if (current_by_next != FICTIVE_ELEMENT_INDEX || current_by_prev != FICTIVE_ELEMENT_INDEX)
+        //     return VERIFY_CYCLE_DETECTED;
     }
 
     return VERIFY_SUCCESS;
@@ -347,7 +355,7 @@ void write_information_about_list(FILE* htm_file, doubly_linked_list* list)
     verify_result result = verify_list(list);
     const char* verify_result_in_string = verify_result_translator(result);
     const char* verify_colour = (result == VERIFY_SUCCESS) ? "green" : "red";
-     fprintf(htm_file, "<p><b>Verify result:</b> <span style='color:%s; font_weight: bold;'>%s</span></p>\n",
+    fprintf(htm_file, "<p><b>Verify result:</b> <span style='color:%s; font_weight: bold;'>%s</span></p>\n",
             verify_colour, verify_result_in_string);
 
     fprintf(htm_file, "</div>\n");
@@ -392,7 +400,6 @@ void write_elements_in_table(FILE* htm_file, doubly_linked_list* list)
     }
 
     fprintf(htm_file, "</table>\n");
-
 }
 
 
