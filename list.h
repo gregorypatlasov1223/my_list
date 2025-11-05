@@ -41,6 +41,7 @@ list_type_error list_destructor(doubly_linked_list* ptr_list_struct);
 list_type_error insert_after_element(doubly_linked_list* list, int target_index, int value);
 list_type_error insert_before_head(doubly_linked_list* list, int value);
 list_type_error insert_after_tail(doubly_linked_list* list, int value);
+list_type_error list_insert_the_first_element(doubly_linked_list* list, int value);
 list_type_error list_delete_element(doubly_linked_list* list, int index);
 ssize_t get_index_of_head(doubly_linked_list* list);
 ssize_t get_index_of_tail(doubly_linked_list* list);

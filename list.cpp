@@ -178,6 +178,12 @@ list_type_error insert_after_tail(doubly_linked_list* list, int value)
 }
 
 
+list_type_error list_insert_the_first_element(doubly_linked_list* list, int value)
+{
+    return insert_after_element(list, FICTIVE_ELEMENT_INDEX, value);
+}
+
+
 list_type_error list_delete_element(doubly_linked_list* list, int index)
 {
     if (list == NULL)
