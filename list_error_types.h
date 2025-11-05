@@ -10,8 +10,7 @@ enum list_type_error
     LIST_WRONG_SPECIFIED_CAPACITY =  3,
     LIST_OPENING_FILE_ERROR       =  4,
     LIST_NULL_POINTER             =  5,
-    LIST_SHIT_INDEX               =  6,
-    LIST_NO_FREE_SPACE            =  7,
+    LIST_NO_FREE_SPACE            =  6,
 };
 
 enum  verify_result

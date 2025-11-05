@@ -15,16 +15,31 @@ int element_is_free(doubly_linked_list* list, int index)
     if (index < 0 || index >= list -> capacity)
         return 0;
 
-    ssize_t current_free_index = list -> free; // list -> free - первый свободный
+    ssize_t current_free_index = list -> free;
     while (current_free_index != SHIT_INDEX && current_free_index >= 0 && current_free_index < list -> capacity)
     {
         if (current_free_index == index)
-            return 1; // надо 1 надо поработать
+            return 1;
 
         current_free_index = list -> array[current_free_index].next;
     }
 
     return 0;
+}
+
+
+void init_list_elements(element_in_list* array, ssize_t start_index, ssize_t end_index, ssize_t fictive_element_index)
+{
+    for (ssize_t i = start_index; i < end_index; i++)
+    {
+        array[i].data = POISON;
+        array[i].prev = -1;
+
+        if (i == end_index - 1)
+            array[i].next = fictive_element_index;
+        else
+            array[i].next = (int)(i + 1);
+    }
 }
 
 
@@ -45,19 +60,11 @@ list_type_error list_realloc(doubly_linked_list* list, ssize_t new_capacity)
     list -> array = new_array;
 
     ssize_t old_capacity = list -> capacity;
-    for (ssize_t i = old_capacity; i < new_capacity; i++) // тут индексы совпадают с номерами ячеек?
-    {
-        list -> array[i].data = POISON;
-        list -> array[i].prev = -1;
-        if (i == new_capacity - 1)
-            list -> array[i].next = FICTIVE_ELEMENT_INDEX;
-        else
-            list -> array[i].next = (int)(i + 1);
 
-    }
+    init_list_elements(list -> array, old_capacity, new_capacity, FICTIVE_ELEMENT_INDEX);
 
     if (list -> free == FICTIVE_ELEMENT_INDEX)
-        list -> free = old_capacity; // old_capacity подразумевает с фиктивным элементом?
+        list -> free = old_capacity;
     else
     {
         ssize_t last_free = list -> free;
@@ -65,7 +72,7 @@ list_type_error list_realloc(doubly_linked_list* list, ssize_t new_capacity)
             last_free = list -> array[last_free].next;
 
         if (last_free >= 0 && last_free < list -> capacity)
-            list -> array[last_free].next = (int)old_capacity;  // не понимаю как связываем последний свободный с первым новым
+            list -> array[last_free].next = (int)old_capacity;  // связываем последний свободный с первым новым
     }
 
     list -> capacity = new_capacity;
@@ -92,16 +99,7 @@ list_type_error list_constructor_with_specified_capacity(doubly_linked_list* ptr
     ptr_list_struct -> array[FICTIVE_ELEMENT_INDEX].next = FICTIVE_ELEMENT_INDEX;
     ptr_list_struct -> array[FICTIVE_ELEMENT_INDEX].prev = FICTIVE_ELEMENT_INDEX;
 
-    for (ssize_t i = 1; i < capacity; i++)
-    {
-        ptr_list_struct -> array[i].data = POISON;
-        ptr_list_struct -> array[i].prev = -1;
-
-        if (i == capacity - 1)
-            ptr_list_struct -> array[i].next = FICTIVE_ELEMENT_INDEX;
-        else
-            ptr_list_struct -> array[i].next = (int)(i + 1);
-    }
+    init_list_elements(ptr_list_struct -> array, 1, capacity, FICTIVE_ELEMENT_INDEX);
 
     ptr_list_struct -> free = 1;
     ptr_list_struct -> size = 0;
@@ -115,13 +113,12 @@ list_type_error list_destructor(doubly_linked_list* ptr_list_struct)
     assert(ptr_list_struct != NULL);
 
     if (ptr_list_struct -> array != NULL)
-            free(ptr_list_struct -> array);
+        free(ptr_list_struct -> array);
 
     ptr_list_struct -> array    = NULL;
     ptr_list_struct -> capacity = SHIT_VALUE;
     ptr_list_struct -> free     = SHIT_VALUE;
     ptr_list_struct -> size     = SHIT_VALUE;
-
 
     return LIST_NO_ERROR;
 }
@@ -135,7 +132,7 @@ list_type_error insert_after_element(doubly_linked_list* list, int target_index,
     if (target_index < 0 || target_index >= list -> capacity)
         return SHIT_INDEX;
 
-    if (list -> free == 0)
+    if (list -> free == FICTIVE_ELEMENT_INDEX)
     {
         list_type_error result_of_realloc = list_realloc(list, (list -> capacity) * CAPACITY_INCREASE_COEFFICIENT);
         if (result_of_realloc != LIST_NO_ERROR)
@@ -189,7 +186,75 @@ list_type_error insert_after_tail(doubly_linked_list* list, int value)
 
 list_type_error list_insert_the_first_element(doubly_linked_list* list, int value)
 {
+    assert(list != NULL);
+
     return insert_after_element(list, FICTIVE_ELEMENT_INDEX, value);
+}
+
+
+ssize_t get_index_of_next(doubly_linked_list* list, ssize_t index)
+{
+    if (list == NULL)
+        return LIST_NULL_POINTER;
+
+    return list -> array[index].next;
+}
+
+
+list_type_error list_linearize(doubly_linked_list* list)
+{
+    if (list == NULL)
+        return LIST_NULL_POINTER;
+
+    if (list -> size == 1)
+        return LIST_NO_ERROR;
+
+    element_in_list* temp_array = (element_in_list*)calloc(size_t(list -> capacity), sizeof(element_in_list));
+    if (temp_array == NULL)
+        return LIST_ALLOCATION_FAILED;
+
+    temp_array[FICTIVE_ELEMENT_INDEX] =  list -> array[FICTIVE_ELEMENT_INDEX];
+
+    if (list -> size > 0)
+    {
+    temp_array[FICTIVE_ELEMENT_INDEX].next = FIRST_INDEX;  // голова будет на индексе 1
+    temp_array[FICTIVE_ELEMENT_INDEX].prev = list -> size; // хвост будет на последнем занятом индексе
+    }
+    else
+    {
+    temp_array[FICTIVE_ELEMENT_INDEX].next = EMPTY_LIST_INDEX;
+    temp_array[FICTIVE_ELEMENT_INDEX].prev = EMPTY_LIST_INDEX;
+    }
+
+    ssize_t current_index = get_index_of_head(list);
+    ssize_t new_index     = FIRST_INDEX;
+
+    while (current_index != 0 && new_index <= list -> size)
+    {
+        temp_array[new_index] = list -> array[current_index];
+
+        temp_array[new_index].prev = (new_index == FIRST_INDEX)  ? FICTIVE_ELEMENT_INDEX : (new_index - 1);
+        temp_array[new_index].next = (new_index == list -> size) ? FICTIVE_ELEMENT_INDEX : (new_index + 1);
+
+        current_index = get_index_of_next(list, current_index);
+        new_index++;
+    }
+
+    for (ssize_t i = list -> size + 1; i < list -> capacity; i++)
+    {
+        temp_array[i].data = POISON;
+        temp_array[i].next = (i == list -> capacity - 1) ? 0 : i + 1; // 0 - нет свободных элементов"
+    }
+
+    if (list -> size + 1 < list -> capacity)
+        list -> free = list -> size + 1;
+    else
+        list -> free = 0;
+
+    free(list -> array);
+    list -> array = temp_array;
+
+    return LIST_NO_ERROR;
 }
 
 
@@ -219,12 +284,16 @@ list_type_error list_delete_element(doubly_linked_list* list, int index)
 
 ssize_t get_index_of_head(doubly_linked_list* list)
 {
+    assert(list != NULL);
+
     return list -> array[FICTIVE_ELEMENT_INDEX].next;
 }
 
 
 ssize_t get_index_of_tail(doubly_linked_list* list)
 {
+    assert(list != NULL);
+
     return list -> array[FICTIVE_ELEMENT_INDEX].prev;
 }
 
@@ -233,6 +302,14 @@ void write_dump_header(FILE* htm_file, time_t now)
 {
     fprintf(htm_file, "<div style='border:2px solid #ccc; margin:10px; padding:15px; background:#f9f9f9;'>\n"); //создает красивый контейнер для одного дампа
     fprintf(htm_file, "<h2 style='color:#333;'>List Dump at %s</h2>\n", ctime(&now)); //ctime преобразует время в формате time_t в читаемую строку
+}
+
+
+void create_dot_header(FILE* dot_file)
+{
+    fprintf(dot_file, "digraph DoublyLinkedList {\n");
+    fprintf(dot_file, "    rankdir=LR;\n");
+    fprintf(dot_file, "    node [shape=Mrecord, color = black];\n\n");
 }
 
 
@@ -245,7 +322,7 @@ verify_result detect_cycle(doubly_linked_list* list)
     ssize_t current_by_prev = FICTIVE_ELEMENT_INDEX;
     ssize_t steps = 0;
 
-     while (steps <= list -> size)
+    while (steps <= list -> size)
     {
         current_by_next = list -> array[current_by_next].next;
         current_by_prev = list -> array[current_by_prev].prev;
@@ -263,10 +340,6 @@ verify_result detect_cycle(doubly_linked_list* list)
         // если встретили фиктивный элемент на size + 1 шаге то все ок
         if (current_by_next == FICTIVE_ELEMENT_INDEX && current_by_prev == FICTIVE_ELEMENT_INDEX && steps == list -> size + 1)
             break;
-
-        // // надо проверить что вышли именно по брейку
-        // if (current_by_next != FICTIVE_ELEMENT_INDEX || current_by_prev != FICTIVE_ELEMENT_INDEX)
-        //     return VERIFY_CYCLE_DETECTED;
     }
 
     return VERIFY_SUCCESS;
@@ -345,6 +418,9 @@ const char* verify_result_translator(verify_result result)
 
 void write_information_about_list(FILE* htm_file, doubly_linked_list* list)
 {
+    assert(htm_file != NULL);
+    assert(list     != NULL);
+
     fprintf(htm_file, "<div style='margin-bottom:15px;'>\n"); //margin -- внешний отступ, padding -- внутренний
     fprintf(htm_file, "<p><b>Capacity:</b> %ld</p>\n", list -> capacity);
     fprintf(htm_file, "<p><b>Size:</b> %ld</p>\n", list -> size);
@@ -364,6 +440,8 @@ void write_information_about_list(FILE* htm_file, doubly_linked_list* list)
 
 const char* get_status_of_element(doubly_linked_list* list, int index)
 {
+    assert(list != NULL);
+
     if (index == 0)
         return "FICTIVE";
 
@@ -381,12 +459,14 @@ const char* get_status_of_element(doubly_linked_list* list, int index)
 
     else
         return "FREE";
-
 }
 
 
 void write_elements_in_table(FILE* htm_file, doubly_linked_list* list)
 {
+    assert(list     != NULL);
+    assert(htm_file != NULL);
+
     fprintf(htm_file, "<table border='1' style='border-collapse:collapse; width:100%%; margin-top:15px;'>\n"); //collapse -- убирает двойные линии в ячйеках
     fprintf(htm_file, "<tr><th>Index</th><th>Data</th><th>Next</th><th>Prev</th><th>Status</th></tr>\n");
 
@@ -405,11 +485,17 @@ void write_elements_in_table(FILE* htm_file, doubly_linked_list* list)
 
 void create_dot_nodes(doubly_linked_list* list, FILE* dot_file)
 {
+    assert(list     != NULL);
+    assert(dot_file != NULL);
+
     for (ssize_t i = 0; i < list -> capacity; i++)
     {
+        assert(list     != NULL);
+        assert(dot_file != NULL);
+
         element_in_list* element = &list -> array[i];
         const char* colour = "lightgreen";
-        const char* label  = "FREE";                     // где будет отображаться label
+        const char* label  = "FREE";
         int is_free = element_is_free(list, int(i));
 
 
@@ -454,13 +540,19 @@ void create_dot_nodes(doubly_linked_list* list, FILE* dot_file)
 
 void create_invisible_element_connections(doubly_linked_list* list, FILE* dot_file)
 {
-    for (ssize_t i = 0; i < list -> capacity -1; i++) // почему -1
+    assert(list     != NULL);
+    assert(dot_file != NULL);
+
+    for (ssize_t i = 0; i < list -> capacity - 1; i++)
         fprintf(dot_file, "element%ld -> element%ld [weight=100000, style=invis, color=white];\n", i, i + 1);
 }
 
 
 void create_normal_element_connections(doubly_linked_list* list, FILE* dot_file)
 {
+    assert(list     != NULL);
+    assert(dot_file != NULL);
+
     for (ssize_t i = 0; i < list -> capacity; i++)
     {
         element_in_list* element = &list -> array[i];
@@ -505,6 +597,9 @@ void create_normal_element_connections(doubly_linked_list* list, FILE* dot_file)
 
 void create_free_element_connections(doubly_linked_list* list, FILE* dot_file)
 {
+    assert(list     != NULL);
+    assert(dot_file != NULL);
+
     fprintf(dot_file, "\n");
 
     ssize_t free_index = list -> free;
@@ -528,9 +623,7 @@ list_type_error create_dot_file(doubly_linked_list* list, const char* filename)
     if (dot_file == NULL)
         return LIST_OPENING_FILE_ERROR;
 
-    fprintf(dot_file, "digraph DoublyLinkedList {\n");
-    fprintf(dot_file, "    rankdir=LR;\n");
-    fprintf(dot_file, "    node [shape=Mrecord, color = black];\n\n");
+    create_dot_header(dot_file);
 
     create_dot_nodes(list, dot_file);
     create_invisible_element_connections(list, dot_file);
@@ -551,13 +644,17 @@ list_type_error create_dot_file(doubly_linked_list* list, const char* filename)
 
 list_type_error create_graph_visualization(doubly_linked_list* list, FILE* htm_file, const char* folder_name, time_t now)
 {
+    assert(list        != NULL);
+    assert(htm_file    != NULL);
+    assert(folder_name != NULL);
+
     int number_of_pictures = 0;
 
     char temp_dot[MAX_LENGTH_OF_FILENAME] = {};
     char temp_svg[MAX_LENGTH_OF_FILENAME] = {};
 
-    snprintf(temp_dot, sizeof(temp_dot), "%s/temp_%d%ld.dot",folder_name, number_of_pictures, now);
-    snprintf(temp_svg, sizeof(temp_svg), "%s/temp_%d%ld.svg",folder_name, number_of_pictures, now);
+    snprintf(temp_dot, sizeof(temp_dot), "%s/temp_%d%ld.dot", folder_name, number_of_pictures, now);
+    snprintf(temp_svg, sizeof(temp_svg), "%s/temp_%d%ld.svg", folder_name, number_of_pictures, now);
     number_of_pictures++;
 
     list_type_error dot_result = create_dot_file(list, temp_dot);
@@ -586,6 +683,9 @@ list_type_error create_graph_visualization(doubly_linked_list* list, FILE* htm_f
 
 list_type_error list_dump_to_htm(doubly_linked_list* list, FILE* htm_file, const char* folder_name)
 {
+    assert(list        != NULL);
+    assert(htm_file    != NULL);
+
     time_t now = time(NULL); // time_t позволяет точно фиксировать момент создания дампа / time(NULL) возвращает текущее время
 
     write_dump_header(htm_file, now);

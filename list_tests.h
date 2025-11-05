@@ -1,8 +1,6 @@
 #ifndef LIST_TESTS_H_
 #define LIST_TESTS_H_
 
-// #include "list_tests.h"
-
 #include <assert.h>
 #include <stdio.h>
 

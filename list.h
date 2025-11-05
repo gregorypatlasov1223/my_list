@@ -25,6 +25,8 @@ struct doubly_linked_list
 };
 
 const int FICTIVE_ELEMENT_INDEX          = 0;
+const int EMPTY_LIST_INDEX               = 0;
+const int FIRST_INDEX                    = 1;
 const int COEF                           = 2;
 const int CAPACITY_INCREASE_COEFFICIENT  = 2;
 const int MAX_LENGTH_OF_FILENAME         = 256;
@@ -34,6 +36,7 @@ const type_of_data POISON                = 525252;
 // 1. вспомогательные функции
 int element_is_free(doubly_linked_list* list, int index);
 const char* get_status_of_element(doubly_linked_list* list, int index);
+void init_list_elements(element_in_list* array, ssize_t start_index, ssize_t end_index, ssize_t fictive_element_index);
 // 2. основные операции со списком
 list_type_error list_realloc(doubly_linked_list* list, ssize_t new_capacity);
 list_type_error list_constructor_with_specified_capacity(doubly_linked_list* ptr_list_struct, ssize_t capacity);
@@ -45,6 +48,8 @@ list_type_error list_insert_the_first_element(doubly_linked_list* list, int valu
 list_type_error list_delete_element(doubly_linked_list* list, int index);
 ssize_t get_index_of_head(doubly_linked_list* list);
 ssize_t get_index_of_tail(doubly_linked_list* list);
+ssize_t get_index_of_next(doubly_linked_list* list, ssize_t index);
+list_type_error list_linearize(doubly_linked_list* list);
 
 // 3. функции дампа
 void write_dump_header(FILE* htm_file, time_t now);
@@ -55,6 +60,7 @@ list_type_error list_dump_to_htm(doubly_linked_list* list, FILE* htm_file, const
 list_type_error list_dump(doubly_linked_list* list, const char* filename);
 
 // 4. dot-функции
+void create_dot_header(FILE* dot_file);
 void create_dot_nodes(doubly_linked_list* list, FILE* dot_file);
 void create_invisible_element_connections(doubly_linked_list* list, FILE* dot_file);
 void create_normal_element_connections(doubly_linked_list* list, FILE* dot_file);

@@ -1,5 +1,3 @@
-// #include "list_tests.h"
-
 #include <assert.h>
 #include <stdio.h>
 
@@ -16,7 +14,7 @@ void test_first_insert()
     initialization_of_list_log(folder_name);
 
     list_dump(&list, folder_name);
-    list_type_error result = list_insert_the_first_element(&list, 100);
+    list_insert_the_first_element(&list, 100);
     list_dump(&list, folder_name);
 
     close_list_log(folder_name);
@@ -68,7 +66,7 @@ void test_delete_head()
     insert_after_element(&list, 2, 30);
 
     list_dump(&list, folder_name);
-    list_type_error result = list_delete_element(&list, 1);
+    list_delete_element(&list, 1);
     list_dump(&list, folder_name);
 
     close_list_log(folder_name);
@@ -89,7 +87,7 @@ void test_delete_tail()
     insert_after_element(&list, 2, 30);
 
     list_dump(&list, folder_name);
-    list_type_error result = list_delete_element(&list, 3);
+    list_delete_element(&list, 3);
     list_dump(&list, folder_name);
 
     close_list_log(folder_name);
@@ -108,7 +106,7 @@ void test_delete_last_remaining_element()
     list_insert_the_first_element(&list, 100);
     list_dump(&list, folder_name);
 
-    list_type_error result = list_delete_element(&list, 1);
+    list_delete_element(&list, 1);
     list_dump(&list, folder_name);
 
     close_list_log(folder_name);
@@ -129,7 +127,7 @@ void test_reallocation()
     insert_after_element(&list, 1, 20);
     list_dump(&list, folder_name);
 
-    list_type_error result = insert_after_element(&list, 2, 30);
+    insert_after_element(&list, 2, 30);
     list_dump(&list, folder_name);
 
     close_list_log(folder_name);
