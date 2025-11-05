@@ -46,11 +46,12 @@ list_type_error list_realloc(doubly_linked_list* list, ssize_t new_capacity)
     for (ssize_t i = old_capacity; i < new_capacity; i++) // тут индексы совпадают с номерами ячеек?
     {
         list -> array[i].data = POISON;
-        if (list -> array[i].next == new_capacity - 1) // зачем тут -1
+        list -> array[i].prev = -1;
+        if (i == new_capacity - 1)
             list -> array[i].next = FICTIVE_ELEMENT_INDEX;
-        list -> array[i].next = int(i + 1);
+        else
+            list -> array[i].next = (int)(i + 1);
 
-        list -> array[i].prev = -1; //  почему -1;
     }
 
     if (list -> free == FICTIVE_ELEMENT_INDEX)
@@ -61,7 +62,8 @@ list_type_error list_realloc(doubly_linked_list* list, ssize_t new_capacity)
         while (list -> array[last_free].next != FICTIVE_ELEMENT_INDEX)
             last_free = list -> array[last_free].next;
 
-        list -> array[last_free].next = int(old_capacity);  // не понимаю как связываем последний свободный с первым новым
+        if (last_free >= 0 && last_free < list -> capacity)
+            list -> array[last_free].next = (int)old_capacity;  // не понимаю как связываем последний свободный с первым новым
     }
 
     list -> capacity = new_capacity;
@@ -90,11 +92,12 @@ list_type_error list_constructor_with_specified_capacity(doubly_linked_list* ptr
     for (ssize_t i = 1; i < capacity; i++)
     {
         ptr_list_struct -> array[i].data = POISON;
-        if (ptr_list_struct -> array[i].next == capacity - 1)
-            ptr_list_struct -> array[i].next = FICTIVE_ELEMENT_INDEX;
-        ptr_list_struct -> array[i].next = int(i + 1);
-
         ptr_list_struct -> array[i].prev = -1;
+
+        if (i == capacity - 1)
+            ptr_list_struct -> array[i].next = FICTIVE_ELEMENT_INDEX;
+        else
+            ptr_list_struct -> array[i].next = (int)(i + 1);
     }
 
     ptr_list_struct -> free = 1;
@@ -398,8 +401,8 @@ void create_dot_nodes(doubly_linked_list* list, FILE* dot_file)
     for (ssize_t i = 0; i < list -> capacity; i++)
     {
         element_in_list* element = &list -> array[i];
-        const char* label  = "FREE";                     // где будет отображаться label
         const char* colour = "lightgreen";
+        const char* label  = "FREE";                     // где будет отображаться label
         int is_free = element_is_free(list, int(i));
 
 
@@ -427,7 +430,7 @@ void create_dot_nodes(doubly_linked_list* list, FILE* dot_file)
             label  = "TAIL";
         }
 
-        else if (i != is_free)
+        else if (!is_free)
         {
             colour = "white";
             label  = "USED";
@@ -502,7 +505,7 @@ void create_free_element_connections(doubly_linked_list* list, FILE* dot_file)
     {
         element_in_list* element = &list -> array[free_index];
         if (element -> next != 0)
-            fprintf(dot_file, "    element%ld -> element%ld [color=gray, label=\"free\", constraint=false];\n", free_index, element -> next);
+            fprintf(dot_file, "    element%ld -> element%ld [color=green, label=\"free\", constraint=false];\n", free_index, element -> next);
         free_index = element -> next;
     }
 }
@@ -530,7 +533,7 @@ list_type_error create_dot_file(doubly_linked_list* list, const char* filename)
     fprintf(dot_file, "free_ptr [shape=plaintext, label=\"free\"];\n");
 
     if (list -> free != 0)
-        fprintf(dot_file, "free_ptr -> element%ld [color=black];\n", list -> free);
+        fprintf(dot_file, "free_ptr -> element%ld [color=green];\n", list -> free);
 
     fprintf(dot_file, "}\n");
     fclose(dot_file);
